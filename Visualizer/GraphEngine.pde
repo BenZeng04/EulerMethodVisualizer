@@ -1,6 +1,55 @@
 class GraphEngine {
-  // The position of the camera: what (x, y) co-ordinate is on the center of the screen?
-  // Note that (x, y) refers to graph co-ordinates, not processing graphics co-ordinates
+  class ApproximationPoint {
+    private float prevX, prevY;
+    private float x, y;
+    private int frame;
+    public ApproximationPoint(float x0, float y0) {
+      this.x = this.prevX = x0;
+      this.y = this.prevY = y0;
+    }
+    public void render() {
+      float h = 0.01;
+      float baseStep = 0.01;
+      float displayX, displayY;
+      if (frame % (int) (h / baseStep) == 0) {
+        prevX = x; 
+        prevY = y;
+        displayX = x;
+        displayY = y;
+        y = y + h * differential(x, y);
+        x += h;
+        
+      } else {
+        float progress = (frame % (int) (h / baseStep)) / (h / baseStep);
+        progress = pow(progress, 0.5);
+        displayX = prevX + (x - prevX) * progress;
+        displayY = prevY + (y - prevY) * progress;
+      }
+      String msg = "(" + x + ", " + y + ")";
+      
+      double slope = differential(prevX, prevY);
+      double theta = Math.atan(slope);
+      int skip = ceil(pow(5, ceil(log(width / zoom / 32) / log(5))));
+      double len = skip * 1.4;
+      float xLen = (float) (Math.cos(theta) * len);
+      float yLen = (float) (Math.sin(theta) * len);
+      fill(77, 230);
+      stroke(127, 200);
+      strokeWeight(5);
+      renderLine(displayX - xLen / 2, displayY - yLen / 2, displayX + xLen / 2, displayY + yLen / 2);
+      strokeWeight(15);
+      renderPointWithLabel(displayX, displayY, msg);
+      frame++;
+    }
+  }
+  ArrayList<ApproximationPoint> points = new ArrayList<>();
+  public GraphEngine() {
+    points.add(new ApproximationPoint(-1, 0));
+    points.add(new ApproximationPoint(-2, 0));
+    points.add(new ApproximationPoint(-3, 0));
+    points.add(new ApproximationPoint(-4, 0));
+    points.add(new ApproximationPoint(-5, 0));
+  }
   private final int baseZoom = 25;
   private float zoom = 25;
   private float zoomLog = 0; 
@@ -12,16 +61,15 @@ class GraphEngine {
     zoomLog -= 0.01;
     zoom = baseZoom * pow(10, zoomLog);
   }
-  private float[] polynomial = {-1, 1, 1, -3, 1}; // x^4 - 3x^3 + x^2 + x - 1
+  private float[] polynomial = {-1, 0.03, 0.03, -0.1, 0.01}; // x^4 - 3x^3 + x^2 + x - 1
   private float differential(float x, float y) {
-    //float res = 0;
-    //float pow = 1;
-    //for (int i = 1; i < polynomial.length; i++) {
-    //  res += i * pow * polynomial[i];
-    //  pow *= x;
-    //}
-    //return res;
-    return -x/y;
+    float res = 0;
+    float pow = 1;
+    for (int i = 1; i < polynomial.length; i++) {
+      res += i * pow * polynomial[i];
+      pow *= x;
+    }
+    return -x/(abs(y) + 1);
   }
   public void renderAxis() {
     background(255);
@@ -94,9 +142,9 @@ class GraphEngine {
   }
   
   public void renderSlopeField() {
-    stroke(0, 0, 255, 127);
+    stroke(0, 0, 255, 66);
     strokeWeight(3);
-    int skip = ceil(pow(10, ceil(log(width / zoom / 32) / log(10))));
+    int skip = ceil(pow(5, ceil(log(width / zoom / 32) / log(5))));
     int xStart = -ceil(width / 2 / zoom), xEnd = -xStart;
     int yStart = -ceil(height / 2 / zoom), yEnd = -yStart;
     for (int x = xStart / skip * skip; x <= xEnd; x += skip) {
@@ -129,7 +177,22 @@ class GraphEngine {
     }
     stroke(0, 0, 255);
   }
-  
+  public void renderPointWithLabel(float x, float y, String msg) {
+    textAlign(LEFT, BASELINE);
+    
+    x *= zoom;
+    y *= -zoom;
+    x += width / 2;
+    y += height / 2;
+    
+    if (x >= 0 && x <= width && y >= 0 && y <= height) {
+      point(x, y);
+    }
+    
+    float size = 12;
+    textSize(size);
+    text(msg, x + size, y);
+  }
   public void renderPoint(float x, float y) {
     x *= zoom;
     y *= -zoom;
@@ -154,12 +217,14 @@ class GraphEngine {
       line(x1, y1, x2, y2);
     }
   }
+  
   public void render() {
+    
     pushMatrix();
     renderAxis();
     renderSlopeField();
     renderPolynomial();
-   
+    for (ApproximationPoint p: points) p.render();
     popMatrix();
   }
 }
