@@ -6,7 +6,7 @@ class TextField {
   private int textSize;
   private boolean[] alphaNumeric = new boolean[256];
   private char[] operations = {'+', '-', '*', '/', '^', '(', ')'};
-  
+
   public TextField(int x, int y, int w, int h, int textSize, String filler) {
     this.x = x;
     this.y = y;
@@ -27,9 +27,9 @@ class TextField {
     }
     alphaNumeric['.'] = true;
     alphaNumeric[' '] = true;
-    for (char c: operations) alphaNumeric[c] = true;
+    for (char c : operations) alphaNumeric[c] = true;
   }
-  
+
   public void keyTyped() {
     if (focus) {
       if (key == BACKSPACE) {
@@ -39,7 +39,7 @@ class TextField {
       }
     }
   }
-  
+
   public void mousePressed() {
     if (mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + h) {
       focus = true;
@@ -52,20 +52,19 @@ class TextField {
   }
   public void render() {
     textAlign(LEFT, BASELINE);
-    
-    if (focus) strokeWeight(4); 
+
+    if (focus) strokeWeight(4);
     else strokeWeight(2);
-    
+
     stroke(0);
     fill(255);
     textSize(textSize);
     rect(x, y, w, h);
-    
+
     if (text.length() == 0 && !focus) {
       fill(100, 190);
       text(filler, x + textSize / 4, y + textSize);
-    }
-    else {
+    } else {
       fill(0);
       text(text, x + textSize / 4, y + textSize);
     }

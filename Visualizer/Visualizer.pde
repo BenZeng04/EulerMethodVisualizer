@@ -44,7 +44,7 @@ void draw() {
   xField.render();
   yField.render();
   hField.render();
-  
+
   // Side buttons for zoom
   stroke(#7E85FF, 190);
   fill(#C6C9FF, 220);
@@ -52,12 +52,12 @@ void draw() {
   rect(750, 200, 45, 100, 5);
   rect(754, 210, 37, 37, 5);
   rect(754, 252, 37, 37, 5);
-  
+
   stroke(111, 220);
   line(765, 229, 780, 229);
   line(773, 222, 773, 237);
   line(765, 271, 780, 271);
-  
+
   // Zoom buttons here instead of mousePressed() so holding down continues to zoom
   if (mousePressed) {
     if (mouseX >= 754 && mouseX <= 754 + 37 && mouseY >= 210 && mouseY <= 210 + 37) {
@@ -67,7 +67,7 @@ void draw() {
       graph.decreaseZoom();
     }
   }
-  
+
   // Add point button
   stroke(#7E85FF, 190);
   fill(#C6C9FF, 220);
@@ -75,7 +75,7 @@ void draw() {
   rect(65, 180, 150, 30, 5);
   textSize(20);
   fill(#7E85FF);
-  
+
   textAlign(CENTER, CENTER);
   text("Add Point!", 65 + 150 / 2, 180 + 12);
 }
