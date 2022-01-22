@@ -4,7 +4,7 @@ GraphEngine graph;
 
 void setup() {
   size(800, 500);
-  graph = new GraphEngine("-x/(2+yajsgydyufu)");
+  graph = new GraphEngine("-x/(2+y)");
   graph.insertPoint(-3, -3, 0.25);
 }
 

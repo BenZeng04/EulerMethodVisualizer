@@ -29,8 +29,11 @@ class GraphEngine {
         prevY = y;
         displayX = x;
         displayY = y;
-        y = y + h * parser.differential(x, y);
-        x += h;
+        float dydx = parser.differential(x, y);
+        if (dydx != Float.NaN) {
+          y = y + h * parser.differential(x, y);
+          x += h;
+        }
       } else {
         // Instead of teleporting to the next point per iteration of Euler's method, points will travel a straight line from (x1, y1) to (x2, y2)
         float progress = (frame % (int) (h / baseStep)) / (h / baseStep);
@@ -43,15 +46,18 @@ class GraphEngine {
       String msg = "(" + String.format("%.2f", x)  + ", " + String.format("%.2f", y) + ")";
       
       double slope = parser.differential(prevX, prevY);
-      double theta = Math.atan(slope);
-      int skip = ceil(pow(5, ceil(log(width / zoom / 32) / log(5))));
-      double len = skip * 1.4;
-      float xLen = (float) (Math.cos(theta) * len);
-      float yLen = (float) (Math.sin(theta) * len);
       fill(77, 230);
       stroke(127, 200);
-      strokeWeight(5);
-      renderLine(displayX - xLen / 2, displayY - yLen / 2, displayX + xLen / 2, displayY + yLen / 2);
+      if (slope != Float.NaN) {
+        double theta = Math.atan(slope);
+        int skip = ceil(pow(5, ceil(log(width / zoom / 32) / log(5))));
+        double len = skip * 1.4;
+        float xLen = (float) (Math.cos(theta) * len);
+        float yLen = (float) (Math.sin(theta) * len);
+        
+        strokeWeight(5);
+        renderLine(displayX - xLen / 2, displayY - yLen / 2, displayX + xLen / 2, displayY + yLen / 2);
+      }
       strokeWeight(15);
       renderPointWithLabel(displayX, displayY, msg);
       frame++;
@@ -164,6 +170,7 @@ class GraphEngine {
     for (int x = xStart / skip * skip; x <= xEnd; x += skip) {
       for (int y = yStart / skip * skip; y <= yEnd; y += skip) {
         double slope = parser.differential(x, y);
+        if (slope == Float.NaN) continue;
         double theta = Math.atan(slope);
         double len = skip * 0.8;
         float xLen = (float) (Math.cos(theta) * len);
