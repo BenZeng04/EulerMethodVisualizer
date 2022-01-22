@@ -4,8 +4,13 @@ GraphEngine graph;
 
 void setup() {
   size(800, 500);
-  graph = new GraphEngine("-x/(2+y)");
-  graph.insertPoint(-3, -3, 0.25);
+  graph = new GraphEngine("x/y");
+  graph.insertPoint(-2, -3, 0.5);
+}
+
+void mousePressed() {
+  //graph.updateDifferential("x + y");
+  //graph.insertPoint(random(-10, 10), random(-10, 10), random(0.01, 2));
 }
 
 void draw() {

@@ -1,6 +1,8 @@
 class GraphEngine {
   // ApproximationPoints are (x, y) values you can "add" to the graph that will constantly move according to Euler's Method.
   class ApproximationPoint {
+    private color trail;
+    private ArrayList<Float> pathX, pathY;
     private float prevX, prevY;
     private float x, y;
     private float h;
@@ -9,6 +11,11 @@ class GraphEngine {
     public ApproximationPoint(float x0, float y0, float h) {
       this.x = this.prevX = x0;
       this.y = this.prevY = y0;
+      trail = color(random(255), random(255), random(255));
+      pathX = new ArrayList<Float>();
+      pathY = new ArrayList<Float>();
+      pathX.add(x0);
+      pathY.add(y0);
       // Round the step up to the nearest baseStep (used for animations)
       if (h == 0) h = baseStep;
       else if (h > 0) {
@@ -27,11 +34,13 @@ class GraphEngine {
       if (frame % (int) (h / baseStep) == 0) {
         prevX = x; 
         prevY = y;
+        pathX.add(x);
+        pathY.add(y);
         displayX = x;
         displayY = y;
         float dydx = parser.differential(x, y);
-        if (dydx != Float.NaN) {
-          y = y + h * parser.differential(x, y);
+        if (!Float.isNaN(dydx)) {
+          y = y + h * dydx;
           x += h;
         }
       } else {
@@ -45,22 +54,34 @@ class GraphEngine {
       // Note that it showcases (x, y) as per Euler's method iterations and not the animated progress
       String msg = "(" + String.format("%.2f", x)  + ", " + String.format("%.2f", y) + ")";
       
-      double slope = parser.differential(prevX, prevY);
-      fill(77, 230);
-      stroke(127, 200);
-      if (slope != Float.NaN) {
+      float slope = parser.differential(prevX, prevY);
+      fill(trail, 230);
+      stroke(trail, 200);
+      if (!Float.isNaN(slope)) {
         double theta = Math.atan(slope);
-        int skip = ceil(pow(5, ceil(log(width / zoom / 32) / log(5))));
-        double len = skip * 1.4;
+        double len = width / zoom / 32 * 1.4;
         float xLen = (float) (Math.cos(theta) * len);
         float yLen = (float) (Math.sin(theta) * len);
         
         strokeWeight(5);
         renderLine(displayX - xLen / 2, displayY - yLen / 2, displayX + xLen / 2, displayY + yLen / 2);
       }
+      strokeWeight(3);
+      final int maxPathLength = 20;
+      if (pathX.size() > maxPathLength) {
+        pathX.remove(0);
+        pathY.remove(0);
+      }
+      // Draw at most 20 previous path segments to prevent lag
+      for (int i = 1; i < pathX.size(); i++) {
+        renderLine(pathX.get(i - 1), pathY.get(i - 1), pathX.get(i), pathY.get(i));
+      }
+      renderLine(pathX.get(pathX.size() - 1), pathY.get(pathX.size() - 1), displayX, displayY);
       strokeWeight(15);
       renderPointWithLabel(displayX, displayY, msg);
       frame++;
+      
+      
     }
   }
   ArrayList<ApproximationPoint> points = new ArrayList<>();
@@ -75,6 +96,10 @@ class GraphEngine {
   private DifferentialParser parser;
   
   public GraphEngine(String differential) {
+    this.parser = new DifferentialParser(differential);
+  }
+  
+  public void updateDifferential(String differential) {
     this.parser = new DifferentialParser(differential);
   }
   
@@ -169,8 +194,8 @@ class GraphEngine {
     
     for (int x = xStart / skip * skip; x <= xEnd; x += skip) {
       for (int y = yStart / skip * skip; y <= yEnd; y += skip) {
-        double slope = parser.differential(x, y);
-        if (slope == Float.NaN) continue;
+        float slope = parser.differential(x, y);
+        if (Float.isNaN(slope)) continue;
         double theta = Math.atan(slope);
         double len = skip * 0.8;
         float xLen = (float) (Math.cos(theta) * len);
