@@ -16,7 +16,7 @@ class DifferentialParser {
                 .setVariable("y", y);
     try {
       return (float) e.evaluate();
-    } catch (ArithmeticException ae) {
+    } catch (Exception exp) {
       return Float.NaN;
     }
   }
