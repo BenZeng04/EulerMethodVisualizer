@@ -1,33 +1,48 @@
 class GraphEngine {
+  // ApproximationPoints are (x, y) values you can "add" to the graph that will constantly move according to Euler's Method.
   class ApproximationPoint {
     private float prevX, prevY;
     private float x, y;
+    private float h;
+    private final float baseStep = 0.01; // A "base-step" is used so that large values of h will not cause points to go extremely fast, and instead have animated movement in a straight line per step
     private int frame;
-    public ApproximationPoint(float x0, float y0) {
+    public ApproximationPoint(float x0, float y0, float h) {
       this.x = this.prevX = x0;
       this.y = this.prevY = y0;
+      // Round the step up to the nearest baseStep (used for animations)
+      if (h == 0) h = baseStep;
+      else if (h > 0) {
+        int roundedQuotient = ceil(h / baseStep);
+        this.h = roundedQuotient * baseStep;
+      } else {
+        // Round down if negative
+        int roundedQuotient = floor(h / baseStep);
+        this.h = roundedQuotient * baseStep;
+      }
     }
     public void render() {
-      float h = 0.01;
-      float baseStep = 0.01;
       float displayX, displayY;
+      // Euler's Method
+      // Modulo is used so that the point only follows a step in Euler's method every (h / baseStep) frames; this causes all points added to move with the same x-velocity.
       if (frame % (int) (h / baseStep) == 0) {
         prevX = x; 
         prevY = y;
         displayX = x;
         displayY = y;
-        y = y + h * differential(x, y);
+        y = y + h * parser.differential(x, y);
         x += h;
-        
       } else {
+        // Instead of teleporting to the next point per iteration of Euler's method, points will travel a straight line from (x1, y1) to (x2, y2)
         float progress = (frame % (int) (h / baseStep)) / (h / baseStep);
-        progress = pow(progress, 0.5);
+        progress = pow(progress, 0.5); // The progress is rooted such that the animation is non-linear and more realistically "snaps" to the next point
         displayX = prevX + (x - prevX) * progress;
         displayY = prevY + (y - prevY) * progress;
       }
-      String msg = "(" + x + ", " + y + ")";
+      // Label is given showcasing (x, y), rounded to the nearest 100th
+      // Note that it showcases (x, y) as per Euler's method iterations and not the animated progress
+      String msg = "(" + String.format("%.2f", x)  + ", " + String.format("%.2f", y) + ")";
       
-      double slope = differential(prevX, prevY);
+      double slope = parser.differential(prevX, prevY);
       double theta = Math.atan(slope);
       int skip = ceil(pow(5, ceil(log(width / zoom / 32) / log(5))));
       double len = skip * 1.4;
@@ -43,16 +58,24 @@ class GraphEngine {
     }
   }
   ArrayList<ApproximationPoint> points = new ArrayList<>();
-  public GraphEngine() {
-    points.add(new ApproximationPoint(-1, 0));
-    points.add(new ApproximationPoint(-2, 0));
-    points.add(new ApproximationPoint(-3, 0));
-    points.add(new ApproximationPoint(-4, 0));
-    points.add(new ApproximationPoint(-5, 0));
-  }
+    
+  // Base zoom; zoom when zoomLog = 0
+  // Zooming with the plus and minus button is logarithmic, the actual zoom is 10^(zoomLog)
   private final int baseZoom = 25;
   private float zoom = 25;
   private float zoomLog = 0; 
+  
+  // Raw unparsed differential
+  private DifferentialParser parser;
+  
+  public GraphEngine(String differential) {
+    this.parser = new DifferentialParser(differential);
+  }
+  
+  public void insertPoint(float x, float y, float h) {
+    points.add(new ApproximationPoint(x, y, h));
+  }
+
   private void increaseZoom() {
     zoomLog += 0.01;
     zoom = baseZoom * pow(10, zoomLog);
@@ -61,17 +84,16 @@ class GraphEngine {
     zoomLog -= 0.01;
     zoom = baseZoom * pow(10, zoomLog);
   }
-  private float[] polynomial = {-1, 0.03, 0.03, -0.1, 0.01}; // x^4 - 3x^3 + x^2 + x - 1
-  private float differential(float x, float y) {
-    float res = 0;
-    float pow = 1;
-    for (int i = 1; i < polynomial.length; i++) {
-      res += i * pow * polynomial[i];
-      pow *= x;
-    }
-    return -x/(abs(y) + 1);
+    
+  private float fitXToScreen(float x) {
+    return x * zoom + width / 2;
   }
-  public void renderAxis() {
+  
+  private float fitYToScreen(float y) {
+    return y * -zoom + height / 2; // Needs to be negative because Processing co-ordinates are mirrored; y=0 is the top of the screen
+  }
+
+  private void renderAxis() {
     background(255);
     stroke(0);
     strokeWeight(2);
@@ -131,25 +153,17 @@ class GraphEngine {
     text(0, width / 2 + size / 4, height / 2 + size);
   }
   
-  public float f(float x) {
-    float res = 0;
-    float pow = 1;
-    for (int i = 0; i < polynomial.length; i++) {
-      res += pow * polynomial[i];
-      pow *= x;
-    }
-    return res;
-  }
-  
   public void renderSlopeField() {
     stroke(0, 0, 255, 66);
     strokeWeight(3);
+    // Calculates the set of cartesian coordinates that should contain a slope field line based on the zoom __smoothly__ (not every increase and decrease in zoom will change the set, rounded to the nearest power of 5)
     int skip = ceil(pow(5, ceil(log(width / zoom / 32) / log(5))));
     int xStart = -ceil(width / 2 / zoom), xEnd = -xStart;
     int yStart = -ceil(height / 2 / zoom), yEnd = -yStart;
+    
     for (int x = xStart / skip * skip; x <= xEnd; x += skip) {
       for (int y = yStart / skip * skip; y <= yEnd; y += skip) {
-        double slope = differential(x, y);
+        double slope = parser.differential(x, y);
         double theta = Math.atan(slope);
         double len = skip * 0.8;
         float xLen = (float) (Math.cos(theta) * len);
@@ -158,32 +172,21 @@ class GraphEngine {
       }
     }
   }
-  
-  public void renderPolynomial() {
-    stroke(255, 0, 0);
-    strokeWeight(3);
-    float prevX = 0, prevY = 0;
-    for (int i = 0; i <= width; i++) {
-      float x = ((float) i - width / 2) / zoom;
-      float y = f(x);
 
-      if (i == 0) {
-        renderPoint(x, y);
-      } else {
-        renderLine(x, y, prevX, prevY);
-      }
-      prevX = x; 
-      prevY = y;
+  // x, y are given in cartesian coordinates, and then translated to a position on screen
+  public void renderPoint(float x, float y) {
+    x = fitXToScreen(x);
+    y = fitYToScreen(y);
+    if (x >= 0 && x <= width && y >= 0 && y <= height) {
+      point(x, y);
     }
-    stroke(0, 0, 255);
   }
+
+  // identical to renderPoint() but with a label
   public void renderPointWithLabel(float x, float y, String msg) {
     textAlign(LEFT, BASELINE);
-    
-    x *= zoom;
-    y *= -zoom;
-    x += width / 2;
-    y += height / 2;
+    x = fitXToScreen(x);
+    y = fitYToScreen(y);
     
     if (x >= 0 && x <= width && y >= 0 && y <= height) {
       point(x, y);
@@ -193,37 +196,24 @@ class GraphEngine {
     textSize(size);
     text(msg, x + size, y);
   }
-  public void renderPoint(float x, float y) {
-    x *= zoom;
-    y *= -zoom;
-    x += width / 2;
-    y += height / 2;
-    if (x >= 0 && x <= width && y >= 0 && y <= height) {
-      point(x, y);
-    }
-  }
-
-  public void renderLine(float x1, float y1, float x2, float y2) {
-    x1 *= zoom;
-    y1 *= -zoom;
-    x1 += width / 2;
-    y1 += height / 2;
-    x2 *= zoom;
-    y2 *= -zoom;
-    x2 += width / 2;
-    y2 += height / 2;
+  
+  // x1, y1, x2, and y2 are given in cartesian coordinates, and then translated to a position on screen
+  public void renderLine(float x1, float y1, float x2, float y2) {  
+    x1 = fitXToScreen(x1);
+    y1 = fitYToScreen(y1);
+    x2 = fitXToScreen(x2);
+    y2 = fitYToScreen(y2);
     if ((x1 >= 0 && x1 <= width && y1 >= 0 && y1 <= height) ||
       (x2 >= 0 && x2 <= width && y2 >= 0 && y2 <= height)) {
+        // Only display if it actually is on screen to prevent lag
       line(x1, y1, x2, y2);
     }
   }
   
   public void render() {
-    
     pushMatrix();
     renderAxis();
     renderSlopeField();
-    renderPolynomial();
     for (ApproximationPoint p: points) p.render();
     popMatrix();
   }
