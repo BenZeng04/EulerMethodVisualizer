@@ -46,6 +46,7 @@ class GraphEngine {
       } else {
         // Instead of teleporting to the next point per iteration of Euler's method, points will travel a straight line from (x1, y1) to (x2, y2)
         float progress = (frame % (int) (h / baseStep)) / (h / baseStep);
+        if (progress < 0) progress *= -1;
         progress = pow(progress, 0.5); // The progress is rooted such that the animation is non-linear and more realistically "snaps" to the next point
         displayX = prevX + (x - prevX) * progress;
         displayY = prevY + (y - prevY) * progress;
