@@ -2,8 +2,8 @@ class TextField {
   private boolean focus;
   private String text;
   private String filler;
-  private int x, y, w, h;
-  private int textSize;
+  public int x, y, w, h;
+  public int textSize;
   private boolean[] alphaNumeric = new boolean[256];
   private char[] operations = {'+', '-', '*', '/', '^', '(', ')'};
 
