@@ -46,6 +46,11 @@ void mousePressed() {
     }
     buttonPressed = true;
   }
+  
+  if (mouseX >= textbox.startX+25 && mouseX <= textbox.startX+25 + 150 && mouseY >= textbox.startY+textbox.increment*5 && mouseY <= textbox.startY+textbox.increment*5 + 30) {
+    graph.removeAllPoints();
+    buttonPressed = true;
+  }
   if (mouseX >= 754 && mouseX <= 754 + 37 && mouseY >= 210 && mouseY <= 210 + 37) {
     buttonPressed = true;
     zooming = true;
@@ -152,4 +157,11 @@ void draw() {
 
   textAlign(CENTER, CENTER);
   text("Add Point!", textbox.startX+25 + 150 / 2, textbox.startY+textbox.increment*4 + 12);
+  
+  // Delete point button
+  fill(#C6C9FF, 220);
+  rect(textbox.startX+25, textbox.startY+textbox.increment*5, 150, 30, 5);
+
+  fill(#7E85FF);
+  text("Clear Points!", textbox.startX+25 + 150 / 2, textbox.startY+textbox.increment*5 + 12);
 }

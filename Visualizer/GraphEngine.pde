@@ -249,6 +249,10 @@ class GraphEngine {
     points.add(new ApproximationPoint(x, y, h));
   }
 
+  public void removeAllPoints() {
+    points.clear();
+  }
+
   public void render() {
     pushMatrix();
     renderAxis();
