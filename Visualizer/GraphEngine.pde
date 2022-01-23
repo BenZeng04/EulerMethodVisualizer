@@ -104,6 +104,7 @@ class GraphEngine {
     zoom = baseZoom * pow(10, zoomLog);
   }
   
+  // Maps a point on the Processing window (screenX, screenY) to cartesian co-ordinates on the graph
   private float fitScreenToX(float screenX) {
     return (screenX - width / 2) / zoom + centerX;
   }
@@ -112,6 +113,7 @@ class GraphEngine {
     return (screenY - height / 2) / -zoom + centerY;
   }
 
+  // Maps cartesian co-ordinates (x, y) on the graph to a point on the Processing window
   private float fitXToScreen(float x) {
     return (x - centerX) * zoom + width / 2;
   }
@@ -127,11 +129,11 @@ class GraphEngine {
     line(0, fitYToScreen(0), width, fitYToScreen(0));
     line(fitXToScreen(0), 0, fitXToScreen(0), height);
     textAlign(LEFT, BASELINE);
-    int skip = ceil(pow(10, ceil(log(width / zoom / 64) / log(10))));
+    int skip = ceil(pow(10, ceil(log(width / zoom / 64) / log(10)))); // Only draw grid line markers every _skip_ coordinates (this skip will always be a power of 10 based on the zoom)
     int xStart = (int) fitScreenToX(0), xEnd = (int) fitScreenToX(width);
     for (int i = xStart / skip * skip; i <= xEnd; i += skip) {
-      if (i == 0) continue;
-      if (i % (skip * 5) == 0) {
+      if (i == 0) continue; // Don't draw at (x = 0), that's the y-axis
+      if (i % (skip * 5) == 0) { // Draw thicker grid line markers every 5 'regular' lines
         strokeWeight(1);
         stroke(0, 175);
         float x = fitXToScreen(i);
@@ -180,10 +182,11 @@ class GraphEngine {
     stroke(0, 0, 255, 66);
     strokeWeight(3);
     // Calculates the set of cartesian coordinates that should contain a slope field line based on the zoom __smoothly__ (not every increase and decrease in zoom will change the set, rounded to the nearest power of 5)
-    int skip = ceil(pow(5, ceil(log(width / zoom / 32) / log(5))));
+    int skip = ceil(pow(2, ceil(log(width / zoom / 32) / log(2))));
     int xStart = (int) fitScreenToX(0), xEnd = (int) fitScreenToX(width);
     int yStart = (int) fitScreenToY(height), yEnd = (int) fitScreenToY(0);
 
+    // Displays a slope field line at every (x, y) visible on the screen such that x and y are multiples of _skip_
     for (int x = xStart / skip * skip; x <= xEnd; x += skip) {
       for (int y = yStart / skip * skip; y <= yEnd; y += skip) {
         float slope = parser.differential(x, y);
