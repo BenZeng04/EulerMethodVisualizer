@@ -1,4 +1,5 @@
 class GraphEngine {
+  float centerX = 0, centerY = 0;
   // ApproximationPoints are (x, y) values you can "add" to the graph that will constantly move according to Euler's Method.
   class ApproximationPoint {
     private color trail;
@@ -94,18 +95,6 @@ class GraphEngine {
   // Raw unparsed differential
   private DifferentialParser parser;
 
-  public GraphEngine(String differential) {
-    this.parser = new DifferentialParser(differential);
-  }
-
-  public void updateDifferential(String differential) {
-    this.parser = new DifferentialParser(differential);
-  }
-
-  public void insertPoint(float x, float y, float h) {
-    points.add(new ApproximationPoint(x, y, h));
-  }
-
   private void increaseZoom() {
     zoomLog += 0.01;
     zoom = baseZoom * pow(10, zoomLog);
@@ -114,62 +103,68 @@ class GraphEngine {
     zoomLog -= 0.01;
     zoom = baseZoom * pow(10, zoomLog);
   }
+  
+  private float fitScreenToX(float screenX) {
+    return (screenX - width / 2) / zoom + centerX;
+  }
+  
+  private float fitScreenToY(float screenY) {
+    return (screenY - height / 2) / -zoom + centerY;
+  }
 
   private float fitXToScreen(float x) {
-    return x * zoom + width / 2;
+    return (x - centerX) * zoom + width / 2;
   }
 
   private float fitYToScreen(float y) {
-    return y * -zoom + height / 2; // Needs to be negative because Processing co-ordinates are mirrored; y=0 is the top of the screen
+    return (y - centerY) * -zoom + height / 2; // Needs to be negative because Processing co-ordinates are mirrored; y=0 is the top of the screen
   }
 
   private void renderAxis() {
     background(255);
     stroke(0);
     strokeWeight(2);
-    line(0, height / 2, width, height / 2);
-    line(width / 2, 0, width / 2, height);
+    line(0, fitYToScreen(0), width, fitYToScreen(0));
+    line(fitXToScreen(0), 0, fitXToScreen(0), height);
     textAlign(LEFT, BASELINE);
     int skip = ceil(pow(10, ceil(log(width / zoom / 64) / log(10))));
-
-    int xStart = -ceil(width / 2 / zoom), xEnd = -xStart;
-    for (int i = xStart; i <= xEnd; i++) {
+    int xStart = (int) fitScreenToX(0), xEnd = (int) fitScreenToX(width);
+    for (int i = xStart / skip * skip; i <= xEnd; i += skip) {
       if (i == 0) continue;
-      if (i % skip != 0) continue;
       if (i % (skip * 5) == 0) {
         strokeWeight(1);
         stroke(0, 175);
-        float x = i * zoom + width / 2;
+        float x = fitXToScreen(i);
         line(x, 0, x, height);
         fill(0);
         final int size = 12;
         textSize(size);
-        text(i, x + size / 4, height / 2 + size);
+        // Labels on the x-axis
+        text(i, x + size / 4, fitYToScreen(0) + size);
       } else {
         strokeWeight(0.5);
         stroke(0, 80);
-        float x = i * zoom + width / 2;
+        float x = fitXToScreen(i);
         line(x, 0, x, height);
       }
     }
 
-    int yStart = -ceil(height / 2 / zoom), yEnd = -yStart;
-    for (int i = yStart; i <= yEnd; i++) {
+    int yStart = (int) fitScreenToY(height), yEnd = (int) fitScreenToY(0);
+    for (int i = yStart / skip * skip; i <= yEnd; i += skip) {
       if (i == 0) continue;
-      if (i % skip != 0) continue;
       if (i % (skip * 5) == 0) {
         strokeWeight(1);
         stroke(0, 175);
-        float y = -i * zoom + height / 2;
+        float y = fitYToScreen(i);
         line(0, y, width, y);
         fill(0);
         final int size = 12;
         textSize(size);
-        text(i, width / 2 + size / 4, y + size);
+        text(i, fitXToScreen(0) + size / 4, y + size);
       } else {
         strokeWeight(0.5);
         stroke(0, 80);
-        float y = -i * zoom + height / 2;
+        float y = fitYToScreen(i);
         line(0, y, width, y);
       }
     }
@@ -178,16 +173,16 @@ class GraphEngine {
     fill(0);
     final int size = 12;
     textSize(size);
-    text(0, width / 2 + size / 4, height / 2 + size);
+    text(0, fitXToScreen(0) + size / 4, fitYToScreen(0) + size);
   }
 
-  public void renderSlopeField() {
+  private void renderSlopeField() {
     stroke(0, 0, 255, 66);
     strokeWeight(3);
     // Calculates the set of cartesian coordinates that should contain a slope field line based on the zoom __smoothly__ (not every increase and decrease in zoom will change the set, rounded to the nearest power of 5)
     int skip = ceil(pow(5, ceil(log(width / zoom / 32) / log(5))));
-    int xStart = -ceil(width / 2 / zoom), xEnd = -xStart;
-    int yStart = -ceil(height / 2 / zoom), yEnd = -yStart;
+    int xStart = (int) fitScreenToX(0), xEnd = (int) fitScreenToX(width);
+    int yStart = (int) fitScreenToY(height), yEnd = (int) fitScreenToY(0);
 
     for (int x = xStart / skip * skip; x <= xEnd; x += skip) {
       for (int y = yStart / skip * skip; y <= yEnd; y += skip) {
@@ -203,7 +198,7 @@ class GraphEngine {
   }
 
   // x, y are given in cartesian coordinates, and then translated to a position on screen
-  public void renderPoint(float x, float y) {
+  private void renderPoint(float x, float y) {
     x = fitXToScreen(x);
     y = fitYToScreen(y);
     if (x >= 0 && x <= width && y >= 0 && y <= height) {
@@ -212,7 +207,7 @@ class GraphEngine {
   }
 
   // identical to renderPoint() but with a label
-  public void renderPointWithLabel(float x, float y, String msg) {
+  private void renderPointWithLabel(float x, float y, String msg) {
     textAlign(LEFT, BASELINE);
     x = fitXToScreen(x);
     y = fitYToScreen(y);
@@ -227,7 +222,7 @@ class GraphEngine {
   }
 
   // x1, y1, x2, and y2 are given in cartesian coordinates, and then translated to a position on screen
-  public void renderLine(float x1, float y1, float x2, float y2) {
+  private void renderLine(float x1, float y1, float x2, float y2) {
     x1 = fitXToScreen(x1);
     y1 = fitYToScreen(y1);
     x2 = fitXToScreen(x2);
@@ -238,6 +233,18 @@ class GraphEngine {
       line(x1, y1, x2, y2);
     }
   }
+  
+  public GraphEngine(String differential) {
+    this.parser = new DifferentialParser(differential);
+  }
+
+  public void updateDifferential(String differential) {
+    this.parser = new DifferentialParser(differential);
+  }
+
+  public void insertPoint(float x, float y, float h) {
+    points.add(new ApproximationPoint(x, y, h));
+  }
 
   public void render() {
     pushMatrix();
@@ -245,5 +252,21 @@ class GraphEngine {
     renderSlopeField();
     for (ApproximationPoint p : points) p.render();
     popMatrix();
+  }
+  
+  public float getCenterX() {
+    return centerX;
+  }
+  
+  public float getCenterY() {
+    return centerY;
+  }
+  
+  public void setCenterX(float x) {
+    centerX = x;
+  }
+  
+  public void setCenterY(float y) {
+    centerY = y;
   }
 }

@@ -3,33 +3,14 @@ import net.objecthunter.exp4j.Expression;
 GraphEngine graph;
 DraggableBox textbox = new DraggableBox(40, 40, 200, 25, 15, 10, 4);
 
-TextField differentialField = new TextField(textbox.startX, textbox.startY, textbox.width, textbox.height, textbox.textSize, "Differential equation");
-TextField xField = new TextField(textbox.startX, textbox.startY+textbox.increment, textbox.width, textbox.height, textbox.textSize, "Starting point's x-coordinate");
-TextField yField = new TextField(textbox.startX, textbox.startY+textbox.increment*2, textbox.width, textbox.height, textbox.textSize, "Starting point's y-coordinate");
-TextField hField = new TextField(textbox.startX, textbox.startY+textbox.increment*3, textbox.width, textbox.height, textbox.textSize, "Step length");
+TextField differentialField = new TextField(textbox, 0, "Differential equation");
+TextField xField = new TextField(textbox, 1, "Starting point's x-coordinate");
+TextField yField = new TextField(textbox, 2, "Starting point's y-coordinate");
+TextField hField = new TextField(textbox, 3, "Step length");
 
-//todo: clicking to add points, panning across graph, option to slow down, mouse to zoom
-
-class DraggableBox { //so i thought it would be nice to have the text boxes be draggable
-  int startX = 40; int startY = 40; int width = 200; int height = 25; int textSize = 15;
-  int increment = height+10; int numberOfTextBoxes = 4;
-  
-  public DraggableBox (int x, int y, int w, int h, int t, int i, int n) {
-    startX=x; startY=y; width=w; height=h; textSize=t; increment=i+height; numberOfTextBoxes = n;
-  }
-  boolean ifDragged() {
-    //drag window
-    if (mouseX >= startX-10 && mouseX <= startX + width+20 && mouseY >= startY-10 && mouseY <= startY + height*(numberOfTextBoxes+1) + 25) {
-      startX = mouseX;
-      startY = mouseY;
-      return true;
-    }
-    return false;
-  }
-  void drawBox() {
-    rect(startX-10, startY-10, width+20, height*(numberOfTextBoxes+1) + 25, 5);
-  }
-}
+float initialMouseX, initialMouseY;
+boolean moving = false;
+boolean zooming = false;
 
 void setup() {
   size(800, 500);
@@ -44,10 +25,16 @@ void keyTyped() {
 }
 
 void mousePressed() {
-  differentialField.mousePressed();
-  xField.mousePressed();
-  yField.mousePressed();
-  hField.mousePressed();
+  moving = true;
+  initialMouseX = graph.fitScreenToX(mouseX);
+  initialMouseY = graph.fitScreenToY(mouseY);
+  
+  // Don't toggle moving if pressing other buttons
+  if(textbox.mousePressed()) moving = false;
+  if(differentialField.mousePressed()) moving = false;
+  if(xField.mousePressed()) moving = false;
+  if(yField.mousePressed()) moving = false;
+  if(hField.mousePressed()) moving = false;
   // Add point button
   if (mouseX >= textbox.startX+25 && mouseX <= textbox.startX+25 + 150 && mouseY >= textbox.startY+textbox.increment*4 && mouseY <= textbox.startY+textbox.increment*4 + 30) {
     try {
@@ -59,37 +46,47 @@ void mousePressed() {
     catch (Exception e) {
       // Don't add if cannot parse (x, y)
     }
+    moving = false;
+  }
+  if (mouseX >= 754 && mouseX <= 754 + 37 && mouseY >= 210 && mouseY <= 210 + 37) {
+    moving = false;
+    zooming = true;
+  }
+  if (mouseX >= 754 && mouseX <= 754 + 37 && mouseY >= 252 && mouseY <= 252 + 37) {
+    moving = false;
+    zooming = true;
   }
 }
 
 void mouseDragged() {
-  //dragging textbox
-  boolean objectDragged = textbox.ifDragged();
-  //translating text field if nothing else is dragged
-  if (!objectDragged) {
-    translate(mouseX, mouseY);
+  textbox.mouseDragged();
+  if (moving) {
+    graph.setCenterX(graph.getCenterX() - (graph.fitScreenToX(mouseX) - initialMouseX));
+    graph.setCenterY(graph.getCenterY() - (graph.fitScreenToY(mouseY) - initialMouseY));
   }
 }
 
 void mouseWheel(MouseEvent event) {
   //use mouse wheel to scroll
   float scroll = event.getCount();
-  if (scroll>0) graph.increaseZoom();
-  else if (scroll<0) graph.decreaseZoom();
+  if (scroll > 0) {
+    for (int i = 0; i < scroll; i++)
+      graph.increaseZoom();
+  }
+  else if (scroll < 0) {
+    for (int i = 0; i < -scroll; i++)
+      graph.decreaseZoom();
+  }
 }
 
 
-void draw() {
-  //update position of textboxes based on draggable box
-  differentialField.x = textbox.startX;
-  differentialField.y = textbox.startY;
-  xField.x = textbox.startX;
-  xField.y = textbox.startY + textbox.increment;
-  yField.x = textbox.startX;
-  yField.y = textbox.startY + textbox.increment*2;
-  hField.x = textbox.startX;
-  hField.y = textbox.startY + textbox.increment*3;
+void mouseReleased() {
+  moving = false;
+  zooming = false;
+  textbox.mouseReleased();
+}
 
+void draw() {
   //draw graph
   graph.updateDifferential(differentialField.getText());
   graph.render();
@@ -115,7 +112,7 @@ void draw() {
   line(765, 271, 780, 271);
 
   // Zoom buttons here instead of mousePressed() so holding down continues to zoom
-  if (mousePressed) {
+  if (zooming) {
     if (mouseX >= 754 && mouseX <= 754 + 37 && mouseY >= 210 && mouseY <= 210 + 37) {
       graph.increaseZoom();
     }
