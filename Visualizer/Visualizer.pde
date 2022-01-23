@@ -25,16 +25,14 @@ void keyTyped() {
 }
 
 void mousePressed() {
-  moving = true;
+  boolean buttonPressed = false;
   initialMouseX = graph.fitScreenToX(mouseX);
   initialMouseY = graph.fitScreenToY(mouseY);
-  
-  // Don't toggle moving if pressing other buttons
-  if(textbox.mousePressed()) moving = false;
-  if(differentialField.mousePressed()) moving = false;
-  if(xField.mousePressed()) moving = false;
-  if(yField.mousePressed()) moving = false;
-  if(hField.mousePressed()) moving = false;
+
+  if(differentialField.mousePressed()) buttonPressed = true;
+  if(xField.mousePressed()) buttonPressed = true;
+  if(yField.mousePressed()) buttonPressed = true;
+  if(hField.mousePressed()) buttonPressed = true;
   // Add point button
   if (mouseX >= textbox.startX+25 && mouseX <= textbox.startX+25 + 150 && mouseY >= textbox.startY+textbox.increment*4 && mouseY <= textbox.startY+textbox.increment*4 + 30) {
     try {
@@ -46,16 +44,39 @@ void mousePressed() {
     catch (Exception e) {
       // Don't add if cannot parse (x, y)
     }
-    moving = false;
+    buttonPressed = true;
   }
   if (mouseX >= 754 && mouseX <= 754 + 37 && mouseY >= 210 && mouseY <= 210 + 37) {
-    moving = false;
+    buttonPressed = true;
     zooming = true;
   }
   if (mouseX >= 754 && mouseX <= 754 + 37 && mouseY >= 252 && mouseY <= 252 + 37) {
-    moving = false;
+    buttonPressed = true;
     zooming = true;
   }
+  
+  // Don't move the textbox if pressing other buttons
+  if (!buttonPressed) {
+    if(textbox.mousePressed()) {
+      buttonPressed = true; 
+    }
+  }
+
+  // Don't pan the screen if pressing other buttons or if adding points 
+  if (!buttonPressed) { 
+    if (mouseButton == RIGHT) {
+      try {
+        float x = graph.fitScreenToX(mouseX);
+        float y = graph.fitScreenToY(mouseY);
+        float h = Float.parseFloat(hField.getText());
+        graph.insertPoint(x, y, h);
+      }
+      catch (Exception e) {
+        // Don't add if cannot parse (x, y)
+      }
+    }
+    else moving = true;
+  } else moving = false;
 }
 
 void mouseDragged() {
