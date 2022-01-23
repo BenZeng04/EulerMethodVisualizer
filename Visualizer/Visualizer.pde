@@ -85,6 +85,7 @@ void mousePressed() {
 }
 
 void mouseDragged() {
+  if (mouseX >= width || mouseX <= 0 || mouseY >= height || mouseY <= 0) return;
   textbox.mouseDragged();
   if (moving) {
     graph.setCenterX(graph.getCenterX() - (graph.fitScreenToX(mouseX) - initialMouseX));
