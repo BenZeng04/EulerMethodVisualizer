@@ -30,28 +30,33 @@ class GraphEngine {
       if (this.h == 0) this.h = baseStep;
     }
     public void render() {
-      double displayX, displayY;
-      // Euler's Method
-      // Modulo is used so that the Point only follows a step in Euler's method every (h / baseStep) frames; this causes all points added to move with the same x-velocity.
-      if (frame % (long) (h / baseStep) == 0) {
-        prevX = x;
-        prevY = y;
-        pathX.add(x);
-        pathY.add(y);
-        displayX = x;
-        displayY = y;
-        double dydx = parser.differential(x, y);
-        if (!Double.isNaN(dydx)) {
-          y = y + h * dydx;
-          x += h;
+      double displayX = 0, displayY = 0;
+      double speedUpConstant = Math.sqrt(Math.ceil(40 / zoom));
+      // Simulates _speedUpConstant_ frames per frame so points do not lag behind when zooming out
+      for (int i = 0; i < speedUpConstant; i++) {
+        // Euler's Method
+        // Modulo is used so that the Point only follows a step in Euler's method every (h / baseStep) frames; this causes all points added to move with the same x-velocity.
+        if (frame % (long) (h / baseStep) == 0) {
+          prevX = x;
+          prevY = y;
+          pathX.add(x);
+          pathY.add(y);
+          displayX = x;
+          displayY = y;
+          double dydx = parser.differential(x, y);
+          if (!Double.isNaN(dydx)) {
+            y = y + h * dydx;
+            x += h;
+          }
+        } else {
+          // Instead of teleporting to the next Point per iteration of Euler's method, points will travel a straight line from (x1, y1) to (x2, y2)
+          double progress = (frame % (long) (h / baseStep)) / (h / baseStep);
+          if (progress < 0) progress *= -1;
+          progress = Math.pow(progress, 0.5); // The progress is rooted such that the animation is non-linear and more realistically "snaps" to the next point
+          displayX = prevX + (x - prevX) * progress;
+          displayY = prevY + (y - prevY) * progress;
         }
-      } else {
-        // Instead of teleporting to the next Point per iteration of Euler's method, points will travel a straight line from (x1, y1) to (x2, y2)
-        double progress = (frame % (long) (h / baseStep)) / (h / baseStep);
-        if (progress < 0) progress *= -1;
-        progress = Math.pow(progress, 0.5); // The progress is rooted such that the animation is non-linear and more realistically "snaps" to the next point
-        displayX = prevX + (x - prevX) * progress;
-        displayY = prevY + (y - prevY) * progress;
+        frame++;
       }
       // Label is given showcasing (x, y), rounded to the nearest 100th
       // Note that it showcases (x, y) as per Euler's method iterations and not the animated progress
@@ -71,7 +76,7 @@ class GraphEngine {
       }
       strokeWeight(3);
       final long maxPathLength = 20;
-      if (pathX.size() > maxPathLength) {
+      while (pathX.size() > maxPathLength) {
         pathX.remove(0);
         pathY.remove(0);
       }
@@ -82,7 +87,6 @@ class GraphEngine {
       renderLine(pathX.get(pathX.size() - 1), pathY.get(pathX.size() - 1), displayX, displayY);
       strokeWeight(15);
       renderPointWithLabel(displayX, displayY, msg);
-      frame++;
     }
   }
   ArrayList<ApproximationPoint> points = new ArrayList<>();
