@@ -8,17 +8,17 @@ class DifferentialParser {
 
   // Returns dy/dx at (x, y) given the string
   // Uses the exp4j API, at https://www.objecthunter.net/exp4j/#Introduction
-  public float differential(float x, float y) {
+  public double differential(double x, double y) {
     try {
       Expression e = new ExpressionBuilder(differential)
         .variables("x", "y")
         .build()
         .setVariable("x", x)
         .setVariable("y", y);
-      return (float) e.evaluate();
+      return e.evaluate();
     }
     catch (Exception exp) {
-      return Float.NaN;
+      return Double.NaN;
     }
   }
 }

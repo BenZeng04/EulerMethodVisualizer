@@ -8,7 +8,7 @@ TextField xField = new TextField(textbox, 1, "Starting point's x-coordinate");
 TextField yField = new TextField(textbox, 2, "Starting point's y-coordinate");
 TextField hField = new TextField(textbox, 3, "Step length");
 
-float initialMouseX, initialMouseY;
+double initialMouseX, initialMouseY;
 boolean moving = false;
 boolean zooming = false;
 
@@ -36,9 +36,9 @@ void mousePressed() {
   // Add point button
   if (mouseX >= textbox.startX+25 && mouseX <= textbox.startX+25 + 150 && mouseY >= textbox.startY+textbox.increment*4 && mouseY <= textbox.startY+textbox.increment*4 + 30) {
     try {
-      float x = Float.parseFloat(xField.getText());
-      float y = Float.parseFloat(yField.getText());
-      float h = Float.parseFloat(hField.getText());
+      double x = Double.parseDouble(xField.getText());
+      double y = Double.parseDouble(yField.getText());
+      double h = Double.parseDouble(hField.getText());
       graph.insertPoint(x, y, h);
     }
     catch (Exception e) {
@@ -71,9 +71,9 @@ void mousePressed() {
   if (!buttonPressed) { 
     if (mouseButton == RIGHT) {
       try {
-        float x = graph.fitScreenToX(mouseX);
-        float y = graph.fitScreenToY(mouseY);
-        float h = Float.parseFloat(hField.getText());
+        double x = graph.fitScreenToX(mouseX);
+        double y = graph.fitScreenToY(mouseY);
+        double h = Double.parseDouble(hField.getText());
         graph.insertPoint(x, y, h);
       }
       catch (Exception e) {
@@ -95,13 +95,13 @@ void mouseDragged() {
 
 void mouseWheel(MouseEvent event) {
   //use mouse wheel to scroll
-  float scroll = event.getCount();
-  if (scroll > 0) {
-    for (int i = 0; i < scroll; i++)
+  int scroll = event.getCount() * 2;
+  if (scroll < 0) {
+    for (int i = 0; i < -scroll; i++)
       graph.increaseZoom();
   }
-  else if (scroll < 0) {
-    for (int i = 0; i < -scroll; i++)
+  else if (scroll > 0) {
+    for (int i = 0; i < scroll; i++)
       graph.decreaseZoom();
   }
 }
